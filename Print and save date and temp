@@ -1,0 +1,152 @@
+// SPI and SD libraries. SPI for connecting SD card to SPI bus.
+#include <SPI.h>
+#include <SD.h>
+#include <Wire.h>
+#include "RTClib.h"
+const int sdPin = 10;
+RTC_DS1307 rtc;
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+
+// Temperature pin set to analog 0
+const int temPin = 0;
+ 
+// Delay time. How often to take a temperature reading, in miliseconds
+// 20 minutes = 1200000 milliseconds
+const int delayTime = 1000;
+ 
+// File variable
+File tempsFile;
+ 
+ 
+ 
+void setup() {
+  // Serial output for when connected to computer
+  Serial.begin(57600);
+  if (! rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1);
+  }
+
+  if (! rtc.isrunning()) {
+    Serial.println("RTC is NOT running!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+  }
+}
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+ 
+  Serial.print("Initializing SD card...");
+  if(!SD.begin(sdPin)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("Initialization done.");
+  if (! rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1);
+  }
+
+  if (! rtc.isrunning()) {
+    Serial.println("RTC is NOT running!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+ 
+  tempsFile = SD.open("temps.txt", FILE_WRITE);
+ 
+  if (tempsFile) {
+    Serial.println("Printing temperatures");
+    tempsFile.println("Printing temperatures:");
+    tempsFile.close();
+    Serial.println("Done.");
+  } else {
+    Serial.println("Error opening file in setup.");
+  }
+ 
+}
+ 
+void loop() {
+
+  /*************** RTC TEST*******/
+  /*{
+    DateTime now = rtc.now();
+    
+  
+    Serial.println();
+    
+   
+    
+    Serial.println();
+    delay(delayTime);
+}
+
+  /********************/
+  // Open SD card for writing
+  tempsFile = SD.open("temps.txt", FILE_WRITE);
+ 
+  if (tempsFile) {
+    // Temperature readings
+    float voltage, degreesC, degreesF;
+    voltage = getVoltage(temPin);
+    degreesC = (voltage - 0.5) * 100.0;
+    degreesF = degreesC * (9.0/5.0) + 32.0;
+ 
+    // write temps to Serial
+    Serial.print(now.year(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.day(), DEC);
+    Serial.print(' ');
+    Serial.print(now.hour(), DEC);
+    Serial.print(':');
+    Serial.print(now.minute(), DEC);
+    Serial.print(':');
+    Serial.print(now.second(), DEC);
+    Serial.println("");
+    Serial.print("Celsius: ");
+    Serial.print(degreesC);
+    Serial.println("");
+   
+    
+ 
+    // write temps to SD card
+    tempsFile.print(now.year(), DEC);
+    tempsFile.print('/');
+    tempsFile.print(now.month(), DEC);
+    tempsFile.print('/');
+    tempsFile.print(now.day(), DEC);
+    tempsFile.print(' ');
+    tempsFile.print(now.hour(), DEC);
+    tempsFile.print(':');
+    tempsFile.print(now.minute(), DEC);
+    tempsFile.print(':');
+    tempsFile.print(now.second(), DEC);
+    tempsFile.println("");
+    tempsFile.print("Celsius: ");
+    tempsFile.print(degreesC);
+    tempsFile.println("");
+    tempsFile.print("Celsius: ");
+    tempsFile.print(degreesC);
+  
+  
+ 
+    // close the file
+    tempsFile.close();
+  } else {
+    Serial.println("Error opening file in loop.");
+  }
+ 
+ 
+  delay(delayTime);
+ 
+}
+ 
+float getVoltage(int pin)
+{
+  return (analogRead(pin) * 0.004882814);
+}
